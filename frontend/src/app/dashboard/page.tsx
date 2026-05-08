@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import BalanceCard from "@/components/BalanceCard";
 import { getBalance, initializeUnits } from "@/lib/api";
 import PredictionCard from "@/components/PredictionCard";
@@ -13,7 +13,6 @@ import UsageChart from "@/components/UsageChart";
 import { getUsageHistory } from "@/lib/api";
 import { getToken, removeToken } from "@/lib/auth";
 import { useRouter } from "next/navigation";
-import Logo from "@/components/Logo";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -22,9 +21,6 @@ export default function Dashboard() {
   const [token, setToken] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [costPerUnit, setCostPerUnit] = useState<number>(0);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const storedToken = getToken();
@@ -106,20 +102,6 @@ export default function Dashboard() {
   }, [toast]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
     const fetchAllData = async () => {
       if (!token) return;
 
@@ -194,12 +176,10 @@ export default function Dashboard() {
   const totalUnitsUsed = history.reduce((acc, item) => acc + item.unitsUsed, 0);
   const estimatedCost = totalUnitsUsed * costPerUnit;
 
-  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
-
   if (isCheckingAuth) return null;
 
-  return (
-    <div className="min-h-screen bg-dark text-white p-4 md:p-6">
+return (
+    <div className="min-h-screen bg-dark text-white p-4 md:p-6 pt-8 md:pt-10 space-y-2">
       {toast && (
         <div className={`fixed top-4 right-4 px-4 py-2 rounded shadow-lg z-50 ${
           toast.type === "success" ? "bg-success text-white" : "bg-danger text-white"
@@ -207,169 +187,107 @@ export default function Dashboard() {
           {toast.message}
         </div>
       )}
-      <div className="sticky top-0 z-50 flex justify-between items-center mb-4 md:mb-6 gap-2 px-4 sm:px-6 py-4 bg-[#0f172a]/80 backdrop-blur border-b border-gray-800">
-        <div className="flex items-center gap-3">
-          <Logo />
-        </div>
-
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-4">
-          {pathname !== "/planner" && (
-            <button
-              onClick={() => router.push("/planner")}
-              className="px-4 py-2 border rounded-lg border-gray-600 text-gray-300 hover:border-yellow-400 hover:text-white transition"
-            >
-              ⚡ Plan Usage
-            </button>
-          )}
-
-          {pathname === "/planner" && (
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="px-4 py-2 border rounded-lg border-yellow-400 hover:bg-yellow-400 hover:text-black transition"
-            >
-              📊 Dashboard
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              removeToken();
-              router.push("/login");
-            }}
-            className="text-sm border border-red-500 text-red-400 px-3 py-1 rounded hover:bg-red-500/10 transition"
-          >
-            Logout
-          </button>
-        </div>
-
-        {/* Mobile Avatar Dropdown */}
-        <div ref={menuRef} className="relative md:hidden">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex items-center gap-1 w-auto bg-yellow-400 text-black font-bold px-2 h-8 rounded-full cursor-pointer hover:scale-105 hover:opacity-90 active:scale-95 transition"
-          >
-            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-yellow-200 text-black text-sm">
-              {userName?.charAt(0).toUpperCase()}
-            </span>
-            <span className={`text-xs transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}>
-              ▾
-            </span>
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-44 bg-[#0f172a] border border-gray-700 rounded-lg shadow-lg py-2 z-50">
-              <div className="px-4 py-2 text-sm text-gray-400">
-                Hi {userName} 👋
-              </div>
-
-              {pathname !== "/planner" && (
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    router.push("/planner");
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 transition"
-                >
-                  ⚡ Plan Usage
-                </button>
-              )}
-
-              {pathname === "/planner" && (
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    router.push("/dashboard");
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 transition"
-                >
-                  📊 Dashboard
-                </button>
-              )}
-
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  removeToken();
-                  router.push("/login");
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 transition"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
       
       <AlertBanner message={alert} />
 
-      <div className="bg-card p-6 rounded-2xl border border-gray-700 mb-6">
-        <h2 className="text-gray-400 text-sm mb-3">
-          {balance === 0 ? "Set Initial Units (kWh)" : "Add Units (kWh)"}
-        </h2>
-
-        <input
-          type="number"
-          placeholder={
-            balance === 0
-              ? "Enter your current electricity units (e.g. 120)"
-              : "Add more units (e.g. 50)"
-          }
-          value={initialUnits}
-          onChange={(e) => setInitialUnits(e.target.value)}
-          className="w-full p-2 rounded bg-dark border border-gray-600 text-white mb-3"
-        />
-
-        <button
-          onClick={handleInitializeUnits}
-          disabled={!initialUnits || initLoading}
-          className={`w-full font-bold py-2 rounded transition ${initLoading ? "bg-gray-500 cursor-not-allowed" : "bg-primary text-black hover:opacity-90"}`}
-        >
-          {initLoading ? "Processing..." : balance === 0 ? "Set Units" : "Add Units"}
-        </button>
+      <div className="mb-4 mt-6">
+        <h2 className="text-xl md:text-2xl font-bold text-white text-center">Actions</h2>
+        <p className="text-sm text-gray-400 text-center mt-1">
+          Manage electricity units and monitor estimated spending.
+        </p>
       </div>
 
-      <div className="bg-card p-6 rounded-2xl border border-gray-700 mb-6">
-        <h2 className="text-gray-400 text-sm mb-3">Electricity Cost (₦ per unit)</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
+        <div className="bg-card p-6 rounded-2xl border border-gray-700 w-full md:max-w-none transition duration-300 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(250,204,21,0.08)] hover:-translate-y-1">
+          <h2 className="text-gray-400 text-sm mb-3">
+            {balance === 0 ? "Set Initial Units (kWh)" : "Add Units (kWh)"}
+          </h2>
 
-        <input
-          type="number"
-          placeholder="Enter cost per unit (e.g. 50)"
-          value={costPerUnit || ""}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            setCostPerUnit(value);
-            localStorage.setItem("costPerUnit", String(value));
-          }}
-          className="w-full p-2 rounded bg-dark border border-gray-600 text-white mb-3"
-        />
+          <input
+            type="number"
+            placeholder={
+              balance === 0
+                ? "Enter your current electricity units (e.g. 120)"
+                : "Add more units (e.g. 50)"
+            }
+            value={initialUnits}
+            onChange={(e) => setInitialUnits(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-dark border border-gray-600 text-white mb-3 focus:outline-none focus:border-yellow-400 transition"
+          />
 
-        <div className="text-sm text-gray-400">
-          Total Units Used: <span className="text-white font-semibold">{totalUnitsUsed}</span>
+          <button
+            onClick={handleInitializeUnits}
+            disabled={!initialUnits || initLoading}
+            className={`w-full font-bold py-3 rounded-xl transition ${initLoading ? "bg-gray-500 cursor-not-allowed" : "bg-primary text-black hover:opacity-90"}`}
+          >
+            {initLoading ? "Processing..." : balance === 0 ? "Set Units" : "Add Units"}
+          </button>
         </div>
 
-        <div className="text-lg font-bold text-primary mt-2">
-          Estimated Cost: ₦{estimatedCost.toLocaleString()}
+        <div className="bg-card p-6 rounded-2xl border border-gray-700 w-full md:max-w-none transition duration-300 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(250,204,21,0.08)] hover:-translate-y-1">
+          <h2 className="text-gray-400 text-sm mb-3">Electricity Cost (₦ per unit)</h2>
+
+          <input
+            type="number"
+            placeholder="Enter cost per unit (e.g. 50)"
+            value={costPerUnit || ""}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setCostPerUnit(value);
+              localStorage.setItem("costPerUnit", String(value));
+            }}
+            className="w-full px-4 py-3 rounded-xl bg-dark border border-gray-600 text-white mb-3 focus:outline-none focus:border-yellow-400 transition"
+          />
+
+          <div className="text-sm text-gray-400">
+            Total Units Used: <span className="text-white font-semibold">{totalUnitsUsed}</span>
+          </div>
+
+          <div className="text-lg font-bold text-primary mt-2">
+            Estimated Cost: ₦{estimatedCost.toLocaleString()}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        <div>
+      <div className="mb-4 mt-10 text-center">
+        <h2 className="text-xl md:text-2xl font-bold text-white">Overview</h2>
+        <p className="text-sm text-gray-400 mt-1">
+          Track electricity balance, predictions, and daily usage activity.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 items-start">
+        <div className="w-full sm:max-w-none xl:max-w-md transition duration-300 hover:-translate-y-1">
           <BalanceCard remaining={balance} />
           <p className="text-xs text-gray-400 mt-2">
             Remaining electricity (kWh) — matches your meter reading
           </p>
         </div>
 
-        <PredictionCard 
-          avgPerDay={prediction.avgPerDay}
-          daysLeft={prediction.estimatedDaysLeft}
-        />
+        <div className="w-full sm:max-w-none xl:max-w-md transition duration-300 hover:-translate-y-1">
+          <PredictionCard 
+            avgPerDay={prediction.avgPerDay}
+            daysLeft={prediction.estimatedDaysLeft}
+          />
+        </div>
 
-        <UsageInput onSubmit={handleUsageSubmit} />
+        <div className="w-full sm:col-span-2 xl:col-span-1 sm:max-w-none xl:max-w-md transition duration-300 hover:-translate-y-1">
+          <UsageInput onSubmit={handleUsageSubmit} />
+        </div>
 
-        <UsageChart data={history} />
+        <div className="sm:col-span-2 xl:col-span-3 w-full bg-card border border-gray-700 rounded-2xl p-5 md:p-6 mt-4 transition duration-300 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(250,204,21,0.06)]">
+          <div className="mb-6 text-center">
+            <h2 className="text-xl md:text-2xl font-bold text-white">
+              Usage Insights
+            </h2>
+
+            <p className="text-sm text-gray-400 mt-1">
+              Monitor electricity consumption trends and understand your usage patterns over time.
+            </p>
+          </div>
+
+          <UsageChart data={history} />
+        </div>
       </div>
     </div>
   );

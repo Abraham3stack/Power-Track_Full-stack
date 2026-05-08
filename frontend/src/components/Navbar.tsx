@@ -8,10 +8,6 @@ import Logo from "@/components/Logo";
 export default function Navbar() {
   const pathname = usePathname();
 
-  // Hide navbar on dashboard pages to avoid duplicate header
-  if (pathname.startsWith("/dashboard")) {
-    return null;
-  }
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<{ name?: string } | null>(null);
